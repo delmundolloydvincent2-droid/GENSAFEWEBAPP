@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>G.E.N.S.A.F.E. — Dashboard & Game</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{
+      --card:#fff; --glass:rgba(255,255,255,0.92);
+      --accent:#2b9d3a; --muted:#6b7280;
+      --bg:url('https://i.postimg.cc/y8ZspV04/download-15.jpg');
+    }
+    *{box-sizing:border-box;font-family:Arial,system-ui,-apple-system}
+    body{
+      margin:0;min-height:100vh;background:linear-gradient(#e8f0ea, #f3f7fb), var(--bg);
+      background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;padding:18px;color:#0f172a;
+    }
+    .app{width:980px;max-width:100%;background:var(--glass);border-radius:14px;box-shadow:0 12px 40px rgba(3,10,30,0.18);overflow:hidden}
+    header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;background:rgba(255,255,255,0.6)}
+    header h1{font-size:20px;margin:0}
+    nav{display:flex;gap:8px}
+    button{cursor:pointer;border:0;padding:8px 12px;border-radius:8px;font-weight:700;background:var(--accent);color:#fff}
+    button.secondary{background:#6b7280}
+    main{display:grid;grid-template-columns:300px 1fr;gap:18px;padding:20px}
+    aside.card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 6px 18px rgba(10,20,40,0.06)}
+    .panel{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 6px 18px rgba(10,20,40,0.06)}
+    .small{color:var(--muted);font-size:13px}
+    label{display:block;font-size:13px;color:#334155;margin-top:8px}
+    input[type=text],input[type=password],textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #e6e9ef;margin-top:6px}
+    .profile-row{display:flex;gap:8px;align-items:center}
+    .score-box{background:linear-gradient(180deg,#ecfdf3,#e6ffed);padding:10px;border-radius:10px;text-align:center;font-weight:800}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .images{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+    .images img{width:100%;height:120px;object-fit:contain;border-radius:10px;background:#fff;padding:6px;box-shadow:0 6px 14px rgba(2,6,23,0.06)}
+    .clue{font-size:28px;letter-spacing:4px;margin-top:8px;font-weight:800}
+    .center{display:flex;align-items:center;justify-content:center;gap:10px}
+    .muted{color:var(--muted)}
+    .hidden{display:none}
+    footer{padding:12px 20px;background:rgba(255,255,255,0.6);text-align:center;font-size:13px;color:var(--muted)}
+    /* confetti canvas full-screen */
+    #confettiCanvas{position:fixed;left:0;top:0;right:0;bottom:0;pointer-events:none;z-index:9999}
+    @media (max-width:900px){
+      main{grid-template-columns:1fr; padding:12px}
+      aside.card{order:2}
+    }
+  </style>
+</head>
+<body>
+  <!-- AUDIO -->
+  <audio id="clickS" src="https://assets.mixkit.co/sfx/preview/mixkit-interface-click-1126.mp3"></audio>
+  <audio id="correctS" src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3"></audio>
+  <audio id="winS" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3"></audio>
+
+  <div class="app" role="application" aria-live="polite">
+    <header>
+      <h1>G.E.N.S.A.F.E. — Drug Awareness (4 Pics 1 Word)</h1>
+      <nav>
+        <button id="homeBtn" class="secondary">Home</button>
+        <button id="dashBtn" class="secondary">Dashboard</button>
+        <button id="gameBtn">Play Game</button>
+        <button id="logoutBtn" class="secondary hidden">Logout</button>
+      </nav>
+    </header>
+
+    <main>
+      <!-- LEFT: PROFILE / NAV -->
+      <aside class="card" id="leftPanel">
+        <!-- Login/Register -->
+        <div id="loginPanel">
+          <h3>🔐 Portal</h3>
+          <p class="small">Login or register (local only). Progress is saved on this browser.</p>
+          <label>Username</label>
+          <input id="inUser" type="text" placeholder="e.g. lloyd123">
+          <label>Password</label>
+          <input id="inPass" type="password" placeholder="password">
+          <div style="margin-top:10px" class="center">
+            <button id="btnRegister">Register</button>
+            <button id="btnLogin" class="secondary">Login</button>
+          </div>
+          <p id="loginMsg" class="small" style="color:crimson"></p>
+        </div>
+
+        <!-- Dashboard Summary -->
+        <div id="profilePanel" class="hidden">
+          <h3>👤 Profile</h3>
+          <div class="profile-row">
+            <div style="flex:1">
+              <label>Name</label>
+              <input id="profileName" type="text" readonly>
+            </div>
+          </div>
+          <label>Password</label>
+          <input id="profilePass" type="password" readonly>
+          <div style="margin-top:10px" class="score-box">
+            Score: <span id="profileScore">0</span>
+          </div>
+
+          <div style="margin-top:12px">
+            <label class="small muted">Progress</label>
+            <div id="progressList" class="small muted">No progress yet</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- RIGHT: PAGES -->
+      <section>
+        <!-- HOME -->
+        <div id="homePage" class="panel">
+          <h2>Welcome to G.E.N.S.A.F.E.</h2>
+          <p class="muted">A gamified learning app designed to raise drug awareness among students.</p>
+          <div style="display:flex;gap:12px;margin-top:14px;align-items:flex-start">
+            <div style="flex:1" class="panel">
+              <h4>Purpose</h4>
+              <p style="font-size:14px">This study aims to raise drug awareness among Bukal Integrated National High School students; this study investigates the use of G.E.N.S.A.F.E., a gamified application created to steer students away from risky experimentation.</p>
+            </div>
+            <div style="flex:1" class="panel">
+              <h4>About</h4>
+              <p style="font-size:14px">
+                Utilization of G.E.N.S.A.F.E (GUIDING EVERY NEW LEARNER SAFELY AWAY FROM FORBIDDEN EXPERIMENTS) IN ENHANCING GRADE 7 STUDENTS DRUG AWARENESS AT BUKAL INTEGRATED NATIONAL HIGH SCHOOL
+              </p>
+              <p class="small"><strong>By:</strong><br>
+                Convento, John Carlo R. — RESEARCHER<br>
+                Del Mundo, Lloyd Vincent P. — THE INNOVATION MAKER<br>
+                Maala, John Rix M. — RESEARCHER<br>
+                Manigbas, Gilliane Reese S. — LEADER
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- DASHBOARD -->
+        <div id="dashPage" class="panel hidden">
+          <h2>Dashboard</h2>
+          <p class="small muted">Your saved account info and achievements</p>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px">
+            <div style="flex:1;min-width:220px" class="panel">
+              <h4>Profile</h4>
+              <label>Name</label>
+              <input id="dashName" type="text" readonly>
+              <label>Password</label>
+              <input id="dashPass" type="password" readonly>
+              <label style="margin-top:8px">Total Score</label>
+              <div class="score-box" style="margin-top:6px;font-size:18px"><span id="dashScore">0</span></div>
+            </div>
+            <div style="flex:1;min-width:220px" class="panel">
+              <h4>Achievements & Progress</h4>
+              <div id="dashProgress" class="small muted">No achievements yet</div>
+              <button id="resetProgress" class="secondary" style="margin-top:10px">Reset Progress</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- GAME -->
+        <div id="gamePage" class="panel hidden">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <h2>4 Pics 1 Word — Drug Awareness</h2>
+            <div class="small muted">Win = +10 pts per level</div>
+          </div>
+
+          <div id="gameArea" style="margin-top:10px">
+            <div id="levelTitle"></div>
+            <div class="images" id="gameImages"></div>
+            <div class="clue" id="gameClue"></div>
+            <div style="margin-top:10px" class="center">
+              <input id="gameInput" type="text" placeholder="TYPE ANSWER (CAPS)">
+              <button id="submitAns" class="secondary">Submit</button>
+              <button id="nextLevelBtn" class="hidden">Next</button>
+            </div>
+            <div id="gameMsg" style="margin-top:10px;font-weight:800"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>Made for Bukal Integrated National High School — G.E.N.S.A.F.E.</footer>
+  </div>
+
+  <!-- confetti canvas -->
+  <canvas id="confettiCanvas"></canvas>
+
+  <script>
+    // ---------- Utility & Data ----------
+    const imgsBase = [
+      ["https://i.postimg.cc/Zq8MYFfJ/download-3.jpg","https://i.postimg.cc/zf7FPdtV/images-1.jpg","https://i.postimg.cc/0yqG5ghM/download-2.jpg","https://i.postimg.cc/j27PZ43M/download-1.png"],
+      ["https://i.postimg.cc/WbcksrfK/download-4.png","https://i.postimg.cc/CMGKH2m6/download-4.jpg","https://i.postimg.cc/dtQJRV7J/download-3.png","https://i.postimg.cc/nV0yJYzm/download-2.png"],
+      ["https://cdn-icons-png.flaticon.com/512/833/833472.png","https://i.postimg.cc/HkGBDVQy/received-1150919437011303.jpg","https://i.postimg.cc/v8cJGx62/received-796265076442906.png","https://i.postimg.cc/g2q5gv11/received-2417579988636942.png"],
+      ["https://i.postimg.cc/4NyrN77K/received-801441828940705.png","https://i.postimg.cc/597RG47Y/received-1221128303106922.png","https://i.postimg.cc/XJ2QTL80/received-1859177324701047.jpg","https://i.postimg.cc/HkGBDVQy/received-1150919437011303.jpg"],
+      ["https://cdn-icons-png.flaticon.com/512/3068/3068364.png","https://i.postimg.cc/rm6rzrwf/download-6.jpg","https://i.postimg.cc/B6WKtKnp/download-7.jpg","https://cdn-icons-png.flaticon.com/512/616/616408.png"]
+    ];
+    const levels = [
+      { clue: "D_N_", answer:"DONT", images: imgsBase[0] },
+      { clue: "C_R_I_M_E".replace(/_/g,''), answer:"CRIME", images: imgsBase[1] }, // fallback
+      { clue: "HE__T_", answer:"HEALTH", images: imgsBase[2] },
+      { clue: "E__CA T__N".replace(/ /g,''), answer:"EDUCATION", images: imgsBase[3] },
+      { clue: "_A_E".replace(/_/g,''), answer:"SAFE", images: imgsBase[4] }
+    ];
+    // normalize levels: we will use the explicit objects (some clues above fixed later)
+    const realLevels = [
+      {clue:"D_N_", answer:"DONT", images:imgsBase[0]},
+      {clue:"C_R_I_M_E".replace(/_/g,' '), answer:"CRIME", images:imgsBase[1]},
+      {clue:"HE__T_", answer:"HEALTH", images:imgsBase[2]},
+      {clue:"E__CA T__N".replace(/ /g,' '), answer:"EDUCATION", images:imgsBase[3]},
+      {clue:"_A_E", answer:"SAFE", images:imgsBase[4]}
+    ];
+
+    // simpler: correct array
+    const L = [
+      {clue:"D_N_", answer:"DONT", images:imgsBase[0]},
+      {clue:"C _ I M _", answer:"CRIME", images:imgsBase[1]},
+      {clue:"HE _ _ T _", answer:"HEALTH", images:imgsBase[2]},
+      {clue:"E _ _ CA T _ _ N", answer:"EDUCATION", images:imgsBase[3]},
+      {clue:"_ A _ E", answer:"SAFE", images:imgsBase[4]}
+    ];
+
+    // ---------- Elements ----------
+    const loginPanel = document.getElementById('loginPanel');
+    const profilePanel = document.getElementById('profilePanel');
+    const loginMsg = document.getElementById('loginMsg');
+    const inUser = document.getElementById('inUser');
+    const inPass = document.getElementById('inPass');
+
+    const homePage = document.getElementById('homePage');
+    const dashPage = document.getElementById('dashPage');
+    const gamePage = document.getElementById('gamePage');
+
+    const leftPanel = document.getElementById('leftPanel');
+
+    const btnRegister = document.getElementById('btnRegister');
+    const btnLogin = document.getElementById('btnLogin');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const homeBtn = document.getElementById('homeBtn');
+    const dashBtn = document.getElementById('dashBtn');
+    const gameBtn = document.getElementById('gameBtn');
+
+    const profileName = document.getElementById('profileName');
+    const profilePass = document.getElementById('profilePass');
+    const profileScore = document.getElementById('profileScore');
+    const progressList = document.getElementById('progressList');
+
+    const dashName = document.getElementById('dashName');
+    const dashPass = document.getElementById('dashPass');
+    const dashScore = document.getElementById('dashScore');
+    const dashProgress = document.getElementById('dashProgress');
+    const resetProgress = document.getElementById('resetProgress');
+
+    // game elements
+    const levelTitle = document.getElementById('levelTitle');
+    const gameImages = document.getElementById('gameImages');
+    const gameClue = document.getElementById('gameClue');
+    const gameInput = document.getElementById('gameInput');
+    const submitAns = document.getElementById('submitAns');
+    const nextLevelBtn = document.getElementById('nextLevelBtn');
+    const gameMsg = document.getElementById('gameMsg');
+
+    // audio
+    const clickS = document.getElementById('clickS');
+    const correctS = document.getElementById('correctS');
+    const winS = document.getElementById('winS');
+
+    // confetti canvas
+    const c = document.getElementById('confettiCanvas');
+    const ctx = c.getContext('2d');
+    let confettiParticles = [];
+
+    function resizeCanvas(){ c.width = window.innerWidth; c.height = window.innerHeight; }
+    window.addEventListener('resize',resizeCanvas); resizeCanvas();
+
+    // ---------- Auth & Storage ----------
+    let currentUser = null;
+    function usersKey(u){ return `GENSE_users_${u}`; }
+    function saveUserRecord(username, record){
+      localStorage.setItem(usersKey(username), JSON.stringify(record));
+    }
+    function loadUserRecord(username){
+      const s = localStorage.getItem(usersKey(username));
+      return s ? JSON.parse(s) : null;
+    }
+
+    btnRegister.addEventListener('click',()=>{
+      const u = inUser.value.trim(); const p = inPass.value.trim();
+      if(!u || !p){ loginMsg.innerText = "Fill username & password"; return; }
+      if(loadUserRecord(u)){ loginMsg.innerText = "User exists — choose another"; return; }
+      const rec = { password:p, level:0, score:0, achievements:[] };
+      saveUserRecord(u, rec);
+      loginMsg.style.color = 'green'; loginMsg.innerText = "Registered ✅ — click Login";
+    });
+
+    btnLogin.addEventListener('click',()=>{
+      const u = inUser.value.trim(); const p = inPass.value.trim();
+      const rec = loadUserRecord(u);
+      if(!rec || rec.password !== p){ loginMsg.style.color='crimson'; loginMsg.innerText = "Invalid credentials"; return;}
+      // success
+      currentUser = u;
+      loginMsg.innerText = "";
+      showLoggedInUI();
+      renderDashboard();
+      goHome();
+    });
+
+    logoutBtn.addEventListener('click', ()=>{
+      currentUser = null;
+      showLoggedOutUI();
+      goHome();
+    });
+
+    function showLoggedInUI(){
+      loginPanel.classList.add('hidden');
+      profilePanel.classList.remove('hidden');
+      logoutBtn.classList.remove('hidden');
+    }
+    function showLoggedOutUI(){
+      loginPanel.classList.remove('hidden');
+      profilePanel.classList.add('hidden');
+      logoutBtn.classList.add('hidden');
+    }
+
+    // ---------- Navigation ----------
+    homeBtn.addEventListener('click', ()=> goHome());
+    dashBtn.addEventListener('click', ()=> {
+      if(!currentUser){ alert('Please login first'); return; }
+      showPage('dash'); renderDashboard();
+    });
+    gameBtn.addEventListener('click', ()=> {
+      if(!currentUser){ alert('Please login first'); return; }
+      showPage('game'); startGame();
+    });
+
+    function showPage(name){
+      homePage.classList.add('hidden');
+      dashPage.classList.add('hidden');
+      gamePage.classList.add('hidden');
+      if(name==='home') homePage.classList.remove('hidden');
+      if(name==='dash') dashPage.classList.remove('hidden');
+      if(name==='game') gamePage.classList.remove('hidden');
+    }
+    function goHome(){ showPage('home'); }
+
+    // ---------- Dashboard Rendering ----------
+    function renderDashboard(){
+      if(!currentUser) return;
+      const rec = loadUserRecord(currentUser);
+      profileName.value = currentUser;
+      profilePass.value = rec.password;
+      profileScore.innerText = rec.score || 0;
+      progressList.innerHTML = rec.achievements && rec.achievements.length ? rec.achievements.join('<br>') : '<i>No achievements yet</i>';
+
+      dashName.value = currentUser;
+      dashPass.value = rec.password;
+      dashScore.innerText = rec.score || 0;
+      dashProgress.innerHTML = rec.achievements && rec.achievements.length ? rec.achievements.join('<br>') : '<i>No achievements yet</i>';
+    }
+
+    resetProgress.addEventListener('click', ()=>{
+      if(!currentUser) return;
+      if(!confirm('Reset progress?')) return;
+      const r = loadUserRecord(currentUser);
+      r.level = 0; r.score = 0; r.achievements = [];
+      saveUserRecord(currentUser, r);
+      renderDashboard();
+      alert('Progress reset');
+    });
+
+    // ---------- Game Logic ----------
+    let gameLevelIndex = 0;
+
+    function startGame(){
+      const rec = loadUserRecord(currentUser);
+      gameLevelIndex = rec.level || 0;
+      showLevel(gameLevelIndex);
+    }
+
+    function showLevel(i){
+      const L = Ls()[i];
+      levelTitle.innerHTML = `<strong>Level ${i+1} of ${Ls().length}</strong>`;
+      gameImages.innerHTML = L.images.map(src=>`<img src="${src}" alt="image">`).join('');
+      gameClue.innerText = L.clue;
+      gameInput.value = '';
+      gameMsg.innerText = '';
+      nextLevelBtn.classList.add('hidden');
+    }
+
+    function Ls(){ return L; } // We'll fix L variable below
+    // Build proper L from earlier constant L (declared near top). But we want the L array defined earlier in top of script.
+    // However to avoid scoping confusion, directly use the L constant from top-of-script:
+    // (The top-of-script L is in outer scope.)
+    // OK.
+
+    // Submit answer
+    submitAns.addEventListener('click', ()=> submitAnswer());
+    gameInput.addEventListener('keyup', (e)=> { if(e.key==='Enter') submitAnswer(); });
+
+    function submitAnswer(){
+      const ans = (gameInput.value || "").toUpperCase().trim();
+      const levelObj = L[gameLevelIndex];
+      if(!ans){ gameMsg.innerText = 'Type your answer'; return; }
+      if(ans === levelObj.answer){
+        correctS.play().catch(()=>{});
+        gameMsg.style.color = 'green'; gameMsg.innerText = '✅ Correct!';
+        nextLevelBtn.classList.remove('hidden');
+        awardPoints(10, `Cleared level ${gameLevelIndex+1}`);
+        // if final level, show completion behavior
+        if(gameLevelIndex === L.length - 1){
+          winS.play().catch(()=>{});
+          triggerConfetti();
+          gameMsg.innerText = `🎉 You finished all levels! +10 pts`;
+          // mark achievement
+          grantAchievement('Completed the Game');
+        }
+      } else {
+        gameMsg.style.color = 'crimson'; gameMsg.innerText = '❌ Try Again';
+      }
+    }
+
+    nextLevelBtn.addEventListener('click', ()=>{
+      if(gameLevelIndex < L.length - 1){
+        gameLevelIndex++;
+        // save level progress
+        const rec = loadUserRecord(currentUser);
+        rec.level = gameLevelIndex;
+        saveUserRecord(currentUser, rec);
+        showLevel(gameLevelIndex);
+        renderDashboard();
+      } else {
+        // already final -> reload
+        startGame();
+      }
+    });
+
+    // Award points and save
+    function awardPoints(points, reason){
+      if(!currentUser) return;
+      const rec = loadUserRecord(currentUser);
+      rec.score = (rec.score || 0) + points;
+      // add achievement note
+      const note = `${reason} (+${points})`;
+      rec.achievements = rec.achievements || [];
+      rec.achievements.push(note);
+      // also advance level if not at last (we only advance when user clicks next)
+      saveUserRecord(currentUser, rec);
+      renderDashboard();
+    }
+
+    function grantAchievement(text){
+      if(!currentUser) return;
+      const rec = loadUserRecord(currentUser);
+      rec.achievements = rec.achievements || [];
+      if(!rec.achievements.includes(text)) rec.achievements.push(text);
+      saveUserRecord(currentUser, rec);
+      renderDashboard();
+    }
+
+    // ---------- Confetti ----------
+    function triggerConfetti(){
+      // simple emoji confetti burst
+      const pieces = 70;
+      confettiParticles = [];
+      for(let i=0;i<pieces;i++){
+        confettiParticles.push({
+          x: Math.random()*c.width,
+          y: Math.random()*c.height*0.2,
+          vx: (Math.random()-0.5)*6,
+          vy: Math.random()*6+2,
+          r: Math.random()*6+4,
+          color: ['#ff4d6d','#ffd166','#06d6a0','#4d94ff'][Math.floor(Math.random()*4)],
+          life: 100 + Math.random()*40
+        });
+      }
+      requestAnimationFrame(runConfetti);
+      setTimeout(()=>{ confettiParticles = []; }, 3000);
+    }
+    function runConfetti(){
+      ctx.clearRect(0,0,c.width,c.height);
+      confettiParticles.forEach(p=>{
+        p.x += p.vx; p.y += p.vy; p.vy += 0.18; p.life -= 1;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.ellipse(p.x,p.y, p.r, p.r*0.6, 0, 0, Math.PI*2);
+        ctx.fill();
+      });
+      confettiParticles = confettiParticles.filter(p=>p.life>0 && p.y < c.height+50);
+      if(confettiParticles.length) requestAnimationFrame(runConfetti);
+      else ctx.clearRect(0,0,c.width,c.height);
+    }
+
+    // ---------- Init ----------
+    // ensure L is defined (the top-of-script L variable is present)
+    // L already defined earlier as `L = [...]` so we can use it.
+
+    // show/hide panels based on login
+    showLoggedOutUI();
+    showPage('home');
+
+    // quick helper: when clicking Play Game in header, ensure game page visible
+    // (already wired above)
+
+    // Pre-fill sample user for testing (optional) — comment out if undesired
+    // if(!loadUserRecord('test')) saveUserRecord('test',{password:'1234',level:0,score:0,achievements:[]});
+
+    // Small UX: clicking profile password toggles visibility
+    profilePass.addEventListener('click', ()=> {
+      profilePass.type = profilePass.type === 'password' ? 'text' : 'password';
+    });
+    dashPass.addEventListener('click', ()=> {
+      dashPass.type = dashPass.type === 'password' ? 'text' : 'password';
+    });
+
+    // Small click sounds on nav
+    document.querySelectorAll('button').forEach(b=>b.addEventListener('click', ()=> clickS.play().catch(()=>{})));
+  </script>
+</body>
+</html>
